@@ -1,13 +1,4 @@
-read.csv('Motor1.csv') -> Data
-cbp1 <- c("#999999", "#E69F00", "#56B4E9", "#009E73",
-          "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
-          "#999999", "#E69F00", "#56B4E9", "#009E73",
-          "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
-          "#999999", "#E69F00", "#56B4E9", "#009E73",
-          "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
-          "#999999", "#E69F00", "#56B4E9", "#009E73",
-          "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-dependent <- c(1,5,6,7,12,20,21)
+read.csv(commandArgs(trailingOnly=TRUE)[1]) -> Data
 png(file="height-dependent.png", width=1280, height=720)
 plot(Data$Cycle, Data$Height, type="l", col="blue", pch="o")
 for (i in dependent) { lines(Data$Cycle, Data[,i+6], col=cbp1[i], lty=1) }

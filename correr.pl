@@ -28,5 +28,7 @@ if ($mode eq 'RRUN') {
 		mkdir "Motor$_";
 		move("Motor$_.csv", "Motor$_/Motor$_.csv");
 		print "Normalized Motor$_.csv and saved to directory Motor$_\n";
+		system("Rscript regresion.R Motor$_/Motor$_.csv Motor$_/RegressionMotor$_.csv");
+		print "Done regression for Motor$_.csv\n";
 	}
 }
