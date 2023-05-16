@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+
+use File::Copy;
+use File::Path;
  
 # Decide operating mode based on args
 my $mode = @ARGV[0];
@@ -8,22 +11,22 @@ for ($_ = 1; $_ <= 260; $_ = $_ + 1) {
 	push(@dir_list, $_);
 }
 
-# Generating direcories for all the data files
-if ($mode eq 'SETUP') { 	
-	foreach $_ (@dir_list) {
-		mkdir "Motor$_"
-	}
-	print "Generated directories\n";
-}
-
 # House cleaning operations
 if ($mode eq 'CLEAN') {	
 	foreach $_ (@dir_list) {
-		rmdir "Motor$_";
+		rmtree "Motor$_";
 	}
 	print "Removed directories\n";
 }
 
 if ($mode eq 'RRUN') {
-	system('Rscript split.R train_FD002.csv');	
+	print "Generated directories\n";
+	system('Rscript split.R train_data.csv');
+	print "Splitted data\n";
+	foreach $_ (@dir_list) {
+		system("Rscript normalize.R Motor$_.csv");
+		mkdir "Motor$_";
+		move("Motor$_.csv", "Motor$_/Motor$_.csv");
+		print "Normalized Motor$_.csv and saved to directory Motor$_\n";
+	}
 }
