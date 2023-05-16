@@ -20,15 +20,17 @@ if ($mode eq 'CLEAN') {
 }
 
 if ($mode eq 'RRUN') {
-	print "Generated directories\n";
 	system('Rscript split.R train_data.csv');
-	print "Splitted data\n";
+	print "Splitted data\n\n";
 	foreach $_ (@dir_list) {
-		system("Rscript normalize.R Motor$_.csv");
+		print "### Motor$_ ###\n";
 		mkdir "Motor$_";
 		move("Motor$_.csv", "Motor$_/Motor$_.csv");
-		print "Normalized Motor$_.csv and saved to directory Motor$_\n";
-		system("Rscript regresion.R Motor$_/Motor$_.csv Motor$_/RegressionMotor$_.csv");
-		print "Done regression for Motor$_.csv\n";
+		system("Rscript normalize.R Motor$_/Motor$_.csv Motor$_/NormalizedMotor$_.csv");
+		print "Normalization done\n";
+		system("Rscript regresion.R Motor$_/NormalizedMotor$_.csv Motor$_/RegressionMotor$_.csv");
+		print "Regression done\n";
+		system("Rscript plotting.R Motor$_/ Motor$_.csv");
+		print "Plotting done\n\n";
 	}
 }
