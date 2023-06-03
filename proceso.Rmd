@@ -1,0 +1,224 @@
+---
+title: "Proceso"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-05-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+Data <- read.csv("train_data.csv")
+```
+
+No podemos garantizar que todos estos sets de datos inicien con el mismo remanente de vida útil, por lo tanto se debe considerar partir del final, el cual se nos garantiza que representa el fallo del sistema
+
+```{r}
+Data <- data.frame(apply(Data, 2, rev))
+Data$Cycle <- rev(Data$Cycle)
+```
+
+```{r echo=FALSE}
+plot(Data$Cycle, Data$Height)
+```
+
+```{r}
+tmp <- split(Data, Data$Throttle)
+Data60 <- as.data.frame(tmp[1])
+Data100 <- as.data.frame(tmp[2])
+names(Data60) <- names(Data)
+names(Data100) <- names(Data)
+```
+
+De esta forma se tienen los datos más homogéneos para un régimen de trabajo con el 60% de regulador
+
+```{r echo=FALSE}
+plot(Data60$Cycle, Data60$Height)
+```
+
+Mientras que los datos de 100% siguen mostrando contenido de distintos regímenes, al menos 5 distintos
+
+```{r}
+plot(Data100$Cycle, Data100$Height)
+```
+
+```{r}
+tmp <- split(Data100, cut(Data100$Height, c(-10,5,15,25,39,55)))
+Data100_1 <- as.data.frame(tmp[1])
+Data100_2 <- as.data.frame(tmp[2])
+Data100_3 <- as.data.frame(tmp[3])
+Data100_4 <- as.data.frame(tmp[4])
+Data100_5 <- as.data.frame(tmp[5])
+names(Data100_1) <- names(Data)
+names(Data100_2) <- names(Data)
+names(Data100_3) <- names(Data)
+names(Data100_4) <- names(Data)
+names(Data100_5) <- names(Data)
+```
+
+Los datos de estos sub grupos presentan comportamiento homogéneo
+
+```{r echo=FALSE}
+plot(Data100_5$Cycle, Data100_5$Height)
+```
+
+Se ha notado en todos los gráficos generados, que a partir del ciclo 200 hay una disminución en la densidad de datos, o eso aparenta, se realiza un análisis general de cada sub set, auque primero se debe determinar cuáles datos no vale la pena analizar, algunos fáciles de descartar corresponden al motor, ciclo y regulador, ya que son valores discretos con variaciones conocidas que de momento no nos interesan, por ejemplo
+
+```{r}
+summary(Data[,-c(3:4,6:39)])
+```
+
+Se separan los datos a mostrar por regiones, ya que son muchos sensores para mostrar todos en una sóla salida, es posible observar para los datos a 60%, que la altura es casi constante, con variaciones de 0,01 unidades, el número Mach presenta variaciones ligeramente mayores, con 0,022 unidades, ambos variando hacia el tercer cuartil y el sensor 1 es constante
+
+```{r}
+summary(Data60[,-c(1,2,5,9:39)])
+```
+
+El sensor 5 es constante y el 8 sólo tiene una mínima variación en el máximo, la cual no llega a ser significativa ni para el tercer cuartil
+
+```{r}
+summary(Data60[,-c(1:8,14:39)])
+```
+
+Para simplificar la discriminación de variables, se decide emplear únicamente los cuártiles, sumando todos estos y dividiendo según el valor del primer cuartíl multiplicado por 5, para obtener un número sencillo que si es 1, significa que la variable no es significativa para el análisis
+
+```{r}
+# Versión larga de la función, para mayor claridad
+getSig <- function(columna) {
+  cuartiles <- quantile(columna)
+  sumaCuartiles <- sum(cuartiles)
+  ultimoCuartil <- cuartiles[5]
+  calculoSignificancia <- sumaCuartiles/(ultimoCuartil*5)
+  return(calculoSignificancia)
+}
+# Se aplica la función a todas las columnas de los datos
+Significancia <- data.frame(as.list(apply(Data60[,-c(1,2,5)], 2, getSig)))
+row.names(Significancia) <- c("60%")
+```
+
+Con base en la prueba anterior podemos ver que la signficiancia a 60% del sensor 1 es de 1, al igual que el sensor 5, por lo que seguiremos empleando este valor para simplificar la selección de dator, pero con una versión más corta de la función
+
+```{r}
+# Versión final de la función
+getSig <- function(dataFrame, rowName) {
+  sig <- data.frame(as.list(apply(dataFrame, 2, (function(col) sum(quantile(col))/(quantile(col)[5]*5)))))
+  row.names(sig) <- c(rowName)
+  return(sig)
+}
+```
+
+Esto permite generar los datos faltantes y unirlos al data frame ya existente, esto se realiza a continuación
+
+```{r}
+Significancia <- rbind(Significancia, getSig(Data100_1[-c(1,2,5)], "100%_1"))
+Significancia <- rbind(Significancia, getSig(Data100_2[-c(1,2,5)], "100%_2"))
+Significancia <- rbind(Significancia, getSig(Data100_3[-c(1,2,5)], "100%_3"))
+Significancia <- rbind(Significancia, getSig(Data100_4[-c(1,2,5)], "100%_4"))
+Significancia <- rbind(Significancia, getSig(Data100_5[-c(1,2,5)], "100%_5"))
+```
+
+Con los datos encontrados, es posible afirmar que los sensores 1, 5, 18 y 19 no son significativos para nuestro análisis, y tomando un enfoque muy restrictivo se considerarán únicamente los datos donde por lo menos un valor sea menor a 0,99, esto nos lleva a eliminar los sensores 1, 2, 5, 6, 8, 10, 13, 18 y 19; automatizando este filtro es posible llegar a
+
+```{r}
+filtrar <- function(sig, criterio) {
+  tmp <- apply(sig, 2, (function(col) any(col > criterio)))
+  return(sig[,- as.array(which(tmp == "FALSE", arr.ind = FALSE))])
+}
+Significancia <- filtrar(Significancia,0.99)
+```
+
+La altura y Mach pueden ser significativos pese a esto por lo que aun no se descartan
+
+```{r}
+Significancia <- Significancia[,-c(1:2)]
+```
+
+```{r}
+func <- function(name,df) {
+  return(grep(paste("^",name,"$",sep=""), colnames(df)))
+}
+Data100_1 <- Data100_1[,-apply(as.array(names(Significancia)), 1, func, Data100_1)]
+```
+
+Ahora conocemos los datos a considerar y se tienen separados los datos según su régimen correspondiente, el siguiente paso será separar los datos según el motor utilizado, ya que existen muchos valores que se repiten en los gráficos lo que indica superposición de datos en el mismo ciclo, para esto se tiene el script para separar por tipo de motor
+
+```{r}
+tmp <- data.frame(as.list(split(Data100_1, Data100_1$Motor)[1]))
+names(tmp) <- names(Data100_1)
+```
+
+```{r echo=FALSE}
+plot(tmp$Cycle, tmp$Sensor21, type='l')
+```
+
+```{r echo=FALSE}
+plot(tmp$Cycle, tmp$Sensor15, type='l')
+```
+
+Los datos obtenidos generan curvas útiles, sin embargo, algunas de estas son crecientes mientras que otras son decrecientes, por lo que se realiza una transformacion para que todas sean crecientes, ya que estamos representando el crecimiento de salud
+
+```{r}
+getGrowing <- function(col) {
+  if (col[length(col)] < col[1]) {
+    col <- rev(col)
+  }
+  return(col)
+}
+tmp[,-(1:5)] <- apply(tmp[,-(1:5)], 2, getGrowing)
+```
+
+```{r echo=FALSE}
+plot(tmp$Cycle, tmp$Sensor15, type='l')
+```
+
+Sin embargo, esta grafica presenta muchas irregularidades, para limpiar estas se tiene una funcion que aplica una regresion a los datos
+
+```{r}
+tmp2 <- tmp
+tmp2[,-c(1:5)] <- apply(tmp2[,-c(1:5)], 2, (function(col) predict(loess(col~tmp2$Cycle))))
+```
+
+```{r echo=FALSE}
+plot(tmp$Cycle, tmp$Sensor15, type='l')
+lines(tmp2$Cycle, tmp2$Sensor15, type='l', col='red')
+```
+
+```{r echo=FALSE}
+plot(tmp$Cycle, tmp$Sensor21, type='l')
+lines(tmp2$Cycle, tmp2$Sensor21, type='l', col='red')
+```
+
+Con los datos suavizados, el unico paso faltante corresponde a normalizar los datos, pues de esta forma es posible notar tendencias sin importar los rangos de operacion que se esten analizando
+
+```{r}
+tmp <- tmp2
+```
+
+Para realizar la normalizacion se tiene una funcion
+
+```{r}
+tmp <- data.frame(apply(tmp, 2, (function(col) col/max(col))))
+```
+
+```{r echo=FALSE}
+plot(tmp$Cycle, tmp$Sensor21, type='l')
+lines(tmp2$Cycle, tmp2$Sensor21, type='l', col='red')
+```
+
+Con todas las transformaciones realizadas, se grafican todos los sensores para ver su comportamiento
+
+```{r echo=FALSE}
+plot(tmp$Cycle, tmp[,6], type='l', col=colors()[100])
+for (x in 7:length(tmp)) {
+  lines(tmp$Cycle, tmp[,x], type='l', col=colors()[x+30])
+}
+```
+
+Para repetir este procedimiento con cada uno de los subsets de datos, y con cada motor respectivamente, se programa una funcion que junte todos los elementos demostrados en este segmento
+
+```{r}
+write.csv(tmp, file = "Datos_100_1_Motor_1.csv")
+```
