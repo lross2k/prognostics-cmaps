@@ -1,5 +1,5 @@
-FormatSplit <- function(data, index, col.name) {
-  res <- as.data.frame(tmp[index])
+.FormatSplit <- function(data, index, col.name) {
+  res <- as.data.frame(data[index])
   names(res) <- col.name
   return(res)
 }
@@ -17,7 +17,7 @@ FormatSplit <- function(data, index, col.name) {
   return(res)
 }
 
-GetInsignificance <- function(Data_1, Data_2, Data_3, 
+.GetInsignificance <- function(Data_1, Data_2, Data_3, 
                               Data_4, Data_5, Data_6,
                               criteria) {
   res <- .CalcInsignificance(Data_1[-c(1:5)], "Subset_1")
@@ -30,7 +30,7 @@ GetInsignificance <- function(Data_1, Data_2, Data_3,
   return(res)
 }
 
-RemoveByInsignificance <- function(insig, df) {
+.RemoveByInsignificance <- function(insig, df) {
   res <- df[,-apply(as.array(names(insig)), 1, (function(name,df) 
     grep(paste("^",name,"$",sep=""), colnames(df))), df)]
   return(res)

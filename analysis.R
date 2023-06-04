@@ -69,3 +69,15 @@ TestMotor <- function(df, motor, fittingSummary, file.name) {
   
   return(fittingSummary)
 }
+
+TestFitting <- function(df, motor, fittingSummary, equation) {
+  tmp <- data.frame(as.list(split(df, df$Motor)[motor]))
+  names(tmp) <- names(Data_1)
+  tmp <- .FormatMotor(tmp)
+  tmp <- tmp[-c(6,8,9,10,11,13,14,15,16)]
+  x <- tmp$Cycle
+  
+  fittingSummary <- rbind(fittingSummary, 
+                          c(cor(eval(equation),tmp$Extra)^2))
+  return(fittingSummary)
+}
