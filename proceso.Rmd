@@ -103,10 +103,10 @@ Con base en la prueba anterior podemos ver que la signficiancia a 60% del sensor
 
 ```{r}
 # Versión final de la función
-getSig <- function(dataFrame, rowName) {
-  sig <- data.frame(as.list(apply(dataFrame, 2, (function(col) sum(quantile(col))/(quantile(col)[5]*5)))))
-  row.names(sig) <- c(rowName)
-  return(sig)
+getInsig <- function(dataFrame, rowName) {
+  insig <- data.frame(as.list(apply(dataFrame, 2, (function(col) sum(quantile(col))/(quantile(col)[5]*5)))))
+  row.names(insig) <- c(rowName)
+  return(insig)
 }
 ```
 
@@ -221,4 +221,135 @@ Para repetir este procedimiento con cada uno de los subsets de datos, y con cada
 
 ```{r}
 write.csv(tmp, file = "Datos_100_1_Motor_1.csv")
+```
+
+# Organizando proceso
+
+Se cargan los datos totales del csv
+
+```{r}
+Data <- read.csv("train_data.csv")
+```
+
+Se invierte el orden de los datos
+
+```{r}
+#Data <- data.frame(apply(Data, 2, rev))
+```
+
+Separamos con base en los porcentajes del regulador
+
+```{r}
+tmp <- split(Data, Data$Throttle)
+Data60_1 <- as.data.frame(tmp[1])
+Data100 <- as.data.frame(tmp[2])
+names(Data60_1) <- names(Data)
+names(Data100) <- names(Data)
+```
+
+Y se separa el subset de 100% en cinco subsets adicionales
+
+```{r}
+tmp <- split(Data100, cut(Data100$Height, c(-10,5,15,24,39,55)))
+Data100_1 <- as.data.frame(tmp[1])
+Data100_2 <- as.data.frame(tmp[2])
+Data100_3 <- as.data.frame(tmp[3])
+Data100_4 <- as.data.frame(tmp[4])
+Data100_5 <- as.data.frame(tmp[5])
+rm(tmp, Data100)
+names(Data100_1) <- names(Data)
+names(Data100_2) <- names(Data)
+names(Data100_3) <- names(Data)
+names(Data100_4) <- names(Data)
+names(Data100_5) <- names(Data)
+```
+
+Definimos funcion para insignificancia
+
+```{r}
+insignificance <- function(dataFrame, rowName) {
+  insig <- data.frame(as.list(apply(dataFrame, 2, (function(col) sum(quantile(col))/(quantile(col)[5]*5)))))
+  row.names(insig) <- c(rowName)
+  return(insig)
+}
+```
+
+Calculamos la insignificancia
+
+```{r}
+Insignificancia <- insignificance(Data100_1[-c(1,2,5)], "60%_1")
+Insignificancia <- rbind(Insignificancia, insignificance(Data100_1[-c(1,2,5)], "100%_1"))
+Insignificancia <- rbind(Insignificancia, insignificance(Data100_2[-c(1,2,5)], "100%_2"))
+Insignificancia <- rbind(Insignificancia, insignificance(Data100_3[-c(1,2,5)], "100%_3"))
+Insignificancia <- rbind(Insignificancia, insignificance(Data100_4[-c(1,2,5)], "100%_4"))
+Insignificancia <- rbind(Insignificancia, insignificance(Data100_5[-c(1,2,5)], "100%_5"))
+```
+
+Se define funcion para filtrar insignificancia con base en criterio numerico
+
+```{r}
+filtrar <- function(sig, criterio) {
+  tmp <- apply(sig, 2, (function(col) min(col) > criterio))
+  return(sig[,- as.array(which(tmp == "FALSE", arr.ind = FALSE))])
+}
+Insignificancia <- filtrar(Insignificancia,0.988)
+```
+
+Se usan los resultados de la insignificancia para remover estos datos de los subsets
+
+```{r}
+remover <- function(insig,df) {
+  val <- df[,-apply(as.array(names(insig)), 1, (function(name,df) grep(paste("^",name,"$",sep=""), colnames(df))), df)]
+  return(val)
+}
+Data60_1 <- remover(Insignificancia, Data60_1)
+Data100_1 <- remover(Insignificancia, Data100_1)
+Data100_2 <- remover(Insignificancia, Data100_2)
+Data100_3 <- remover(Insignificancia, Data100_3)
+Data100_4 <- remover(Insignificancia, Data100_4)
+Data100_5 <- remover(Insignificancia, Data100_5)
+```
+
+El proceso mas pesado computacionalmente
+
+-   Separar segun el motor
+
+-   Estandarizar curvas crecientes
+
+-   Normalizar datos
+
+-   Invertir los ciclos
+
+```{r}
+getGrowing <- function(col) {
+  if (col[length(col)] < col[1]) {
+    col <- rev(col)
+  }
+  return(col)
+}
+```
+
+```{r}
+tmp <- data.frame(as.list(split(Data100_1, Data100_1$Motor)[1]))
+names(tmp) <- names(Data100_1)
+tmp[,-(1:5)] <- apply(tmp[,-(1:5)], 2, getGrowing)
+tmp[,-c(1:5)] <- apply(tmp[,-c(1:5)], 2, (function(col) predict(loess(col~tmp$Cycle))))
+tmp[,-c(1:5)] <- data.frame(apply(tmp[,-c(1:5)], 2, (function(col) col/max(col))))
+```
+
+```{r echo=FALSE}
+par(mar=c(5.1, 4.8, 1.1, 8.1), xpd=TRUE)
+colores = rainbow(500)
+plot(tmp$Cycle, tmp[,6], type='l', col=colores[100], ylim=c(min(tmp[,-(1:5)]),max(tmp[,-(1:5)])), ylab = 'Sensores', xlab = 'Ciclos', lwd=4.0)
+leg <- c(names(tmp)[6])
+col <- c(colores[100])
+for (x in 7:length(tmp)) {
+  lines(tmp$Cycle, tmp[,x], type='l', col=colores[x+(30*x)], lwd=4.0)
+  leg <- rbind(leg, c(names(tmp)[x]))
+  col <- rbind(col, c(colores[x+(30*x)]))
+}
+legend("topright", inset=c(-0.32,0), box.col = "brown",
+       bg ="yellow", box.lwd = 2, 
+       legend=leg, 
+       fill = col)
 ```
