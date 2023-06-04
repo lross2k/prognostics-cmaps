@@ -1,5 +1,5 @@
 FormatSplit <- function(data, index, col.name) {
-  res <- as.data.frame(tmp[1])
+  res <- as.data.frame(tmp[index])
   names(res) <- col.name
   return(res)
 }

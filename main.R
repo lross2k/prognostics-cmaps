@@ -25,4 +25,18 @@ Data_6 <- RemoveByInsignificance(insig, Data_6)
 rm(insig)
 
 source('analysis.R')
-TestMotor(Data_1, 1, 'Subset_1_Regulador_60_Motor_1')
+
+for (x in c(1,130,260)) {
+  TestMotor(Data_1, x, paste('Subset_1_Regulador_60_Motor_',
+                             as.character(x),sep=''))
+  TestMotor(Data_2, x, paste('Subset_2_Regulador_100_Motor_',
+                             as.character(x),sep=''))
+  TestMotor(Data_3, x, paste('Subset_3_Regulador_100_Motor_',
+                             as.character(x),sep=''))
+  TestMotor(Data_4, x, paste('Subset_4_Regulador_100_Motor_',
+                             as.character(x),sep=''))
+  TestMotor(Data_5, x, paste('Subset_5_Regulador_100_Motor_',
+                             as.character(x),sep=''))
+  TestMotor(Data_6, x, paste('Subset_6_Regulador_100_Motor_',
+                             as.character(x),sep=''))
+}

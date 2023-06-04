@@ -1,7 +1,13 @@
+# Garbage data stuff
 *.csv
+# Image stuff
 *.png
+# Pandoc stuff
 *.pdf
 *.tex
 *.log
 *.html
+# Onedriver stuff
+*.trashinfo
+# RStudio stuff
 .Rhistory

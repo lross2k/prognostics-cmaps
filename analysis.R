@@ -36,11 +36,11 @@
 }
 
 TestMotor <- function(df, motor, file.name) {
-  tmp <- data.frame(as.list(split(df, df$Motor)[260]))
+  tmp <- data.frame(as.list(split(df, df$Motor)[motor]))
   names(tmp) <- names(Data_1)
   tmp <- .FormatMotor(tmp)
   
-  write.csv2(tmp, paste(file.name, '.csv', sep = ''), row.names = FALSE)
+  #write.csv2(tmp, paste(file.name, '.csv', sep = ''), row.names = FALSE)
   
-  .PlotSensors(tmp, paste(file.name, '.png', sep = ''))
+  #.PlotSensors(tmp[-c(6,8,9,10,11,13,14,15,16)], paste(file.name, '.png', sep = ''))
 }
