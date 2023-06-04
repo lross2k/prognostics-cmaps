@@ -52,6 +52,10 @@ TestMotor <- function(df, motor, file.name) {
   names(tmp) <- names(Data_1)
   tmp <- .FormatMotor(tmp)
   tmp <- tmp[-c(6,8,9,10,11,13,14,15,16)]
+  fit3 <- lm(Extra~poly(Cycle,3,raw=TRUE), data=tmp)
+  tmp$Fitted <- predict(fit3)
+  print(summary(fit3)$adj.r.squared)
+  print(summary(fit3))
   
   # Write data to a CSV file with ; delimiter
   #write.csv2(tmp, paste(file.name, '.csv', sep = ''), 
