@@ -47,20 +47,25 @@
   return(df)
 }
 
-TestMotor <- function(df, motor, file.name) {
+TestMotor <- function(df, motor, fittingSummary, file.name) {
   tmp <- data.frame(as.list(split(df, df$Motor)[motor]))
   names(tmp) <- names(Data_1)
   tmp <- .FormatMotor(tmp)
   tmp <- tmp[-c(6,8,9,10,11,13,14,15,16)]
   fit3 <- lm(Extra~poly(Cycle,3,raw=TRUE), data=tmp)
   tmp$Fitted <- predict(fit3)
-  print(summary(fit3)$adj.r.squared)
-  print(summary(fit3))
+  .est <- as.data.frame(summary(fit3)$coefficients)$Estimate
+  fittingSummary <- rbind(fittingSummary, 
+                          #c(summary(fit3)$adj.r.squared, .est[1],
+                            #.est[2], .est[3], .est[4]))
+                          c(.est))
   
   # Write data to a CSV file with ; delimiter
   #write.csv2(tmp, paste(file.name, '.csv', sep = ''), 
   #           row.names = FALSE)
   # Plot sensor data vs cycle
-  .PlotSensors(tmp, 
-               paste(file.name, '.png', sep = ''))
+  #.PlotSensors(tmp, 
+  #             paste(file.name, '.png', sep = ''))
+  
+  return(fittingSummary)
 }

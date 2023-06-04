@@ -25,18 +25,38 @@ Data_6 <- RemoveByInsignificance(insig, Data_6)
 rm(insig)
 
 source('analysis.R')
+fitting <- data.frame()
 
 for (.x in c(1,130,260)) {
-  TestMotor(Data_1, .x, paste('Subset_1_Regulador_60_Motor_',
+  fitting <- TestMotor(Data_1, .x, fitting, 
+                       paste('Subset_1_Regulador_60_Motor_',
                              as.character(.x),sep=''))
-   # TestMotor(Data_2, .x, paste('Subset_2_Regulador_100_Motor_',
-   #                            as.character(.x),sep=''))
-   # TestMotor(Data_3, .x, paste('Subset_3_Regulador_100_Motor_',
-   #                            as.character(.x),sep=''))
-   # TestMotor(Data_4, .x, paste('Subset_4_Regulador_100_Motor_',
-   #                            as.character(.x),sep=''))
-   # TestMotor(Data_5, .x, paste('Subset_5_Regulador_100_Motor_',
-   #                            as.character(.x),sep=''))
-   # TestMotor(Data_6, .x, paste('Subset_6_Regulador_100_Motor_',
-   #                            as.character(.x),sep=''))
+  fitting <- TestMotor(Data_2, .x, fitting, 
+                       paste('Subset_2_Regulador_100_Motor_',
+                             as.character(.x),sep=''))
+  fitting <- TestMotor(Data_3, .x, fitting, 
+                       paste('Subset_3_Regulador_100_Motor_',
+                             as.character(.x),sep=''))
+  fitting <- TestMotor(Data_4, .x, fitting, 
+                       paste('Subset_4_Regulador_100_Motor_',
+                             as.character(.x),sep=''))
+  fitting <- TestMotor(Data_5, .x, fitting, 
+                       paste('Subset_5_Regulador_100_Motor_',
+                             as.character(.x),sep=''))
+  fitting <- TestMotor(Data_6, .x, fitting, 
+                       paste('Subset_6_Regulador_100_Motor_',
+                            as.character(.x),sep=''))
 }
+#names(fitting) <- c('Rsquared','fact1','fact2','fact3','fact4')
+names(fitting) <- c('fact1','fact2','fact3','fact4')
+
+#eq <- quote(mean(fitting$fact1)*x + mean(fitting$fact2)*x^2 + 
+#            mean(fitting$fact3)*x^3 + mean(fitting$fact4)*x^4)
+
+print(paste(as.character(mean(fitting$fact1)), '*x + ', 
+            as.character(mean(fitting$fact2)), '*x^2 + ',
+            as.character(mean(fitting$fact3)), '*x^3 + ', 
+            as.character(mean(fitting$fact4)), '*x^4', sep=''))
+write.csv2(c(mean(fitting$fact1), mean(fitting$fact2), 
+             mean(fitting$fact3), mean(fitting$fact4)),
+           'equation.csv', row.names = FALSE)

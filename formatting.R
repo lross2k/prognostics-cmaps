@@ -30,7 +30,7 @@ GetInsignificance <- function(Data_1, Data_2, Data_3,
   return(res)
 }
 
-RemoveByInsignificance <- function(insig,df) {
+RemoveByInsignificance <- function(insig, df) {
   res <- df[,-apply(as.array(names(insig)), 1, (function(name,df) 
     grep(paste("^",name,"$",sep=""), colnames(df))), df)]
   return(res)
