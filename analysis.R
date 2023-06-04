@@ -26,12 +26,24 @@
   return(col)
 }
 
+.AddExtraCol <- function(df) {
+  new <- c()
+  for (.x in 1:length(df$Sensor14)) {
+    vals <- c(df$Sensor4[.x], df$Sensor15[.x])
+    dist <- max(vals) - min(vals)
+    new <- rbind(new, min(vals) + dist / 2)
+  }
+  df$Extra <- new
+  return(df)
+}
+
 .FormatMotor <- function(df) {
   df[,-c(1:5)] <- apply(df[,-c(1:5)], 2, .TransformDecreasing)
   df[,-c(1:5)] <- apply(df[,-c(1:5)], 2, (function(col) 
                         predict(loess(col~df$Cycle))))
   df[,-c(1:5)] <- data.frame(apply(df[,-c(1:5)], 2, 
                                    (function(col) col/max(col))))
+  df <- .AddExtraCol(df)
   return(df)
 }
 
@@ -39,8 +51,12 @@ TestMotor <- function(df, motor, file.name) {
   tmp <- data.frame(as.list(split(df, df$Motor)[motor]))
   names(tmp) <- names(Data_1)
   tmp <- .FormatMotor(tmp)
+  tmp <- tmp[-c(6,8,9,10,11,13,14,15,16)]
   
-  #write.csv2(tmp, paste(file.name, '.csv', sep = ''), row.names = FALSE)
-  
-  #.PlotSensors(tmp[-c(6,8,9,10,11,13,14,15,16)], paste(file.name, '.png', sep = ''))
+  # Write data to a CSV file with ; delimiter
+  #write.csv2(tmp, paste(file.name, '.csv', sep = ''), 
+  #           row.names = FALSE)
+  # Plot sensor data vs cycle
+  .PlotSensors(tmp, 
+               paste(file.name, '.png', sep = ''))
 }
