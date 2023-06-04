@@ -1,15 +1,20 @@
-commandArgs(trailingOnly=TRUE)[1] -> Path
-commandArgs(trailingOnly=TRUE)[2] -> Motor
-
-Normalized <- read.csv(paste(Path,"Normalized",Motor,sep=""))
-Regression <- read.csv(paste(Path,"Regression",Motor,sep=""))
-Original <- read.csv(paste(Path,Motor,sep=""))
-
-names <- c("Height","Mach","Throttle","Sensor1","Sensor2","Sensor3","Sensor4","Sensor5","Sensor6","Sensor7","Sensor8","Sensor9","Sensor10","Sensor11","Sensor12","Sensor13","Sensor14","Sensor15","Sensor16","Sensor17","Sensor18","Sensor19","Sensor20","Sensor21")
-
-for (i in 1:24) { 
-  png(file=paste(Path,names[i], ".png", sep=''), width=1280, height=720)
-  plot(Original$Cycle, Normalized[,i+2], type="l", col="blue", pch="o")
-  lines(Regression[,i+2], col='red', lwd=2)
+# Function for plotting the sensor data
+PlotSensors  <- function(tmp, file.name) {
+  png(file=file.name, width=1280, height=720)
+  par(mar=c(5.1, 4.8, 1.1, 8.1), xpd=TRUE)
+  colores = rainbow(500)
+  plot(tmp$Cycle, tmp[,6], type='l', col=colores[100], 
+       ylim=c(min(tmp[,-(1:5)]),max(tmp[,-(1:5)])), ylab = 'Sensores', 
+       xlab = 'Ciclos', lwd=4.0)
+  leg <- c(names(tmp)[6])
+  col <- c(colores[100])
+  for (x in 7:length(tmp)) {
+    lines(tmp$Cycle, tmp[,x], type='l', col=colores[x+(30*x)], lwd=4.0)
+    leg <- rbind(leg, c(names(tmp)[x]))
+    col <- rbind(col, c(colores[x+(30*x)]))
+  }
+  legend("topright", inset=c(-0.09,0), box.col = "brown",
+         bg ="yellow", box.lwd = 2, legend=leg, fill = col)
   dev.off()
+  return(NULL)
 }
