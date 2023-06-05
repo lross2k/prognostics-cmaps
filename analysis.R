@@ -57,7 +57,7 @@ TestMotor <- function(df, motor, fittingSummary, file.name) {
   .est <- as.data.frame(summary(fit3)$coefficients)$Estimate
   fittingSummary <- rbind(fittingSummary, 
                           #c(summary(fit3)$adj.r.squared, .est[1],
-                            #.est[2], .est[3], .est[4]))
+                          #.est[2], .est[3], .est[4]))
                           c(.est))
   
   # Write data to a CSV file with ; delimiter
@@ -66,8 +66,26 @@ TestMotor <- function(df, motor, fittingSummary, file.name) {
   # Plot sensor data vs cycle
   #.PlotSensors(tmp, 
   #             paste(file.name, '.png', sep = ''))
+}
+
+FinalPlot <- function(df, index, fileName, eqn) {
+  tmp <- data.frame(as.list(split(df, df$Motor)[index]))
+  names(tmp) <- names(Data_1)
+  tmp$Cycle <- rev(tmp$Cycle)
+  x <- tmp$Cycle
+  tmp$Degradation <- eval(equation)
+  tmp$Health <- 1 - eval(equation)
+  tmp[,-c(1:5)] <- data.frame(apply(tmp[,-c(1:5)], 2, 
+                   (function(col) (col - min(col)) / (max(col) - min(col)))))
   
-  return(fittingSummary)
+  #tmp[,-c(1:5)] <- apply(tmp[,-c(1:5)], 2, .TransformDecreasing)
+  #tmp[,-c(1:5)] <- apply(tmp[,-c(1:5)], 2, (function(col) 
+  #  predict(loess(col~tmp$Cycle))))
+  
+  tmp <- tmp[-c(6,8,9,10,11,13,14,15,16)]
+  
+  # Plot sensor data vs cycle
+  .PlotSensors(tmp, paste(fileName, '.png', sep = ''))
 }
 
 TestFitting <- function(df, motor, fittingSummary, equation) {
